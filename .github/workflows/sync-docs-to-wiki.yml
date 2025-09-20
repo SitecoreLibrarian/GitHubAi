@@ -1,0 +1,39 @@
+name: Sync Docs to Wiki
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Clone the wiki
+        run: |
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git wiki
+
+      - name: Copy docs to wiki
+        run: |
+          rsync -av --delete docs/ wiki/
+
+      - name: Commit and push if there are changes
+        run: |
+          cd wiki
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "Sync docs from /docs directory"
+            git push
+          else
+            echo "No changes to commit"
+          fi
